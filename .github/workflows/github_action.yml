@@ -36,9 +36,11 @@ jobs:
               if line.strip() == '# Spotify':
                   skip = True
                   continue
-              if skip and line.startswith('# ') and line.strip() != '# Spotify':
+              if skip and line.startswith('# '):
                   skip = False
-              if not skip:
+              if not skip and 'jetbrains' in line.lower():
+                  result.append(line)
+              elif not skip and 'spotify' not in line.lower() and 'scdn.co' not in line.lower():
                   result.append(line)
           with open('/tmp/hosts_filtered', 'w') as f:
               f.writelines(result)
