@@ -45,7 +45,9 @@ jobs:
           with open('/tmp/hosts_filtered', 'w') as f:
               f.writelines(result)
           EOF
-          echo "REDIRECT=file:///tmp/hosts_filtered" >> $GITHUB_ENV
+          cd /tmp && python3 -m http.server 8888 &>/dev/null &
+          sleep 1
+          echo "REDIRECT=http://localhost:8888/hosts_filtered" >> $GITHUB_ENV
 
       - name: Set up JDK 25
         uses: actions/setup-java@v4
