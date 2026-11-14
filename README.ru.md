@@ -1,3 +1,10 @@
+> [!NOTE]
+> **Персональный форк.** Код приложения не изменён — репозиторий используется как
+> площадка для запуска по расписанию. Каждый день GitHub Actions собирает проект и
+> перезаписывает правила NextDNS из списка
+> [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS).
+> Ключи и ID профиля хранятся в Secrets репозитория и в коде отсутствуют.
+
 🌐 Languages: [󠁧󠁢󠁥󠁮󠁧󠁿**English**](README.md) | [**Русский**](README.ru.md)
 
 [![Last Build](../../actions/workflows/github_action.yml/badge.svg?branch=main)](../../actions/workflows/github_action.yml)<br>
