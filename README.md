@@ -1,3 +1,9 @@
+> [!NOTE]
+> **Personal fork.** The application code is unchanged — this repository only runs
+> the scheduled job. Every day GitHub Actions builds the project and rewrites the
+> NextDNS rules from the [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS)
+> list. Credentials live in repository Secrets and are never stored in code.
+
 🌐 Languages: [󠁧󠁢󠁥󠁮󠁧󠁿**English**](README.md) | [**Русский**](README.ru.md)
 
 [![Last Build](../../actions/workflows/github_action.yml/badge.svg?branch=main)](../../actions/workflows/github_action.yml)<br>
