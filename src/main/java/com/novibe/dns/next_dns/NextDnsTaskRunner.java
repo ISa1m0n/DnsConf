@@ -16,6 +16,7 @@ import java.util.Map;
 
 import static com.novibe.common.config.EnvironmentVariables.BLOCK;
 import static com.novibe.common.config.EnvironmentVariables.REDIRECT;
+import static com.novibe.common.config.EnvironmentVariables.WIPE;
 import static java.util.Objects.nonNull;
 
 @Service
@@ -74,9 +75,15 @@ public class NextDnsTaskRunner extends DnsTaskRunner {
         }
 
         if (blockSources.isEmpty() && rewriteSources.isEmpty()) {
-            Log.step("Remove settings");
-            nextDnsDenyService.removeAll();
-            nextDnsRewriteService.removeAll();
+            if (WIPE) {
+                Log.step("Remove settings");
+                nextDnsDenyService.removeAll();
+                nextDnsRewriteService.removeAll();
+            } else {
+                // Форк: пустые источники почти всегда означают слетевшие переменные
+                // окружения, а не намерение стереть профиль. Ничего не трогаем.
+                Log.fail("No sources provided: settings are left untouched. Set WIPE=1 to remove them");
+            }
         }
     }
 

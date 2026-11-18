@@ -20,6 +20,17 @@ public class EnvironmentVariables {
 
     public static final String DONOR_DNS = System.getenv("DONOR_DNS");
 
+    // Форк: страховки от случайного стирания профиля. По умолчанию выключены,
+    // поведение апстрима сохраняется, если выставить их в 1.
+    public static final boolean WIPE = isEnabled("WIPE");
+
+    public static final boolean ALLOW_SHRINK = isEnabled("ALLOW_SHRINK");
+
+    private static boolean isEnabled(String key) {
+        String env = System.getenv(key);
+        return !isNull(env) && (env.equals("1") || env.equalsIgnoreCase("true"));
+    }
+
     private static String extractMandatoryVariable(String key) {
         String env = System.getenv(key);
         if (isNull(env) || env.isBlank()) {

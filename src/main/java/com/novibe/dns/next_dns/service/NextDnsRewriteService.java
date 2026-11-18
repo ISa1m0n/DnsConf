@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.novibe.common.config.EnvironmentVariables.ALLOW_SHRINK;
 import static java.util.Objects.nonNull;
 
 @Service
@@ -31,6 +32,15 @@ public class NextDnsRewriteService {
 
     public List<CreateRewriteDto> cleanupOutdatedAndExcluded(Map<String, CreateRewriteDto> newRewriteRequests) {
         List<RewriteDto> existingRewrites = getExistingRewrites();
+
+        // Форк: если новый список внезапно стал вдвое короче, это почти всегда битый
+        // или недокачанный hosts, а не осознанное сокращение. Профиль не трогаем.
+        if (!ALLOW_SHRINK && !existingRewrites.isEmpty()
+                && newRewriteRequests.size() * 2 < existingRewrites.size()) {
+            Log.fail("Refusing to apply %s rewrites while %s are already configured: the new list looks broken (set ALLOW_SHRINK=1 to override)"
+                    .formatted(newRewriteRequests.size(), existingRewrites.size()));
+            return List.of();
+        }
 
         List<String> outdatedIds = new ArrayList<>();
         List<String> ignoredIds = new ArrayList<>();

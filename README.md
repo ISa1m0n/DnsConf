@@ -1,8 +1,10 @@
 > [!NOTE]
-> **Personal fork.** The application code is unchanged — this repository only runs
-> the scheduled job. Every day GitHub Actions builds the project and rewrites the
-> NextDNS rules from the [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS)
-> list. Credentials live in repository Secrets and are never stored in code.
+> **Personal fork.** The fork adds two safety guards to the application code on top of
+> upstream, see [Fork changes](#fork-changes). The job itself runs from GitHub Actions:
+> it builds the project and rewrites the NextDNS rules from the
+> [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS) list. It starts hourly
+> and immediately after the probe on the PC changes the addresses
+> (`repository_dispatch`). Credentials live in repository Secrets and are never stored in code.
 
 🌐 Languages: [󠁧󠁢󠁥󠁮󠁧󠁿**English**](README.md) | [**Русский**](README.ru.md)
 
@@ -253,7 +255,8 @@ Previously generated data is removed **ONLY** when both `BLOCK` and `REDIRECT` s
 4) Provide `AUTH_SECRET` and `CLIENT_ID` to **Environment secrets**
 5) Provide `DNS`,`REDIRECT`, `BLOCK` and `EXCLUDE_REDIRECT` to **Environment variables**
 
-+ The action will be executed every day at **01:30 UTC**. To set another time, change cron at
++ The action is executed **hourly** as a fallback, and immediately when the GeoHideDNS fork
+  sends a `repository_dispatch` (`geohide-updated`). To set another time, change cron at
   `.github/workflows/github_action.yml`
 + You can run the action manually via `Run workflow` button: switch to _Actions_ tab and choose workflow named **DNS
   Block&Redirect Configurer cron task**
@@ -278,3 +281,20 @@ Reconfiguring via the configurator https://dns-conf-ui.vercel.app also enables t
 
 Keep in mind that proxy IPs change over time, so in a fork that has been disabled for a long time, the rules remain
 outdated until the first successful run.
+
+## Fork changes
+
+On top of upstream this fork:
+
+- **Never wipes the profile by accident.** When both `BLOCK` and `REDIRECT` are empty
+  (a cleared repository variable, a broken environment), upstream removes every rule.
+  Here settings are left untouched and the run logs a warning. Set `WIPE=1` to get the
+  upstream behaviour back.
+- **Refuses to apply a list that suddenly halved.** If the new set of rewrites is less
+  than half of what is already configured in NextDNS, the profile is left as is: that is
+  almost always a truncated or broken hosts file. Set `ALLOW_SHRINK=1` to override.
+- **Runs hourly and on demand.** The cron is hourly as a fallback, and
+  the `repository_dispatch` event `geohide-updated` starts the job right after
+  the probe on the PC changed `health.txt` in the GeoHideDNS fork.
+- **Queues instead of cancelling.** Two runs touching the same profile are serialized,
+  so a run is never cut in the middle between deleting and creating rewrites.
