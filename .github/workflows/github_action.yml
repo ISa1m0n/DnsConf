@@ -2,13 +2,17 @@ name: DNS Block&Redirect Configurer cron task
 
 on:
   schedule:
-    - cron: '30 */3 * * *' # каждые 3 часа (раньше раз в сутки, 04:30 MSK), чтобы новые адреса из GeoHideDNS попадали в NextDNS в течение дня
+    - cron: '0 * * * *' # каждый час: страховка, если repository_dispatch от GeoHideDNS не прошёл
+  repository_dispatch:
+    types: [geohide-updated] # мгновенный запуск после того, как проверка с ПК сменила адреса
   workflow_dispatch:
 
-# Two runs at once read and write the same dns profile, so a new run replaces the one in progress
+# Два прогона читают и пишут один и тот же профиль, поэтому второй ждёт,
+# а не обрывает первый на середине (обрыв между удалением и созданием rewrites
+# оставил бы домены без адресов до следующего запуска).
 concurrency:
   group: ${{ github.workflow }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
