@@ -1,18 +1,18 @@
 > [!NOTE]
-> **Personal fork.** The fork adds two safety guards to the application code on top of
-> upstream, see [Fork changes](#fork-changes). The job itself runs from GitHub Actions:
-> it builds the project and rewrites the NextDNS rules from the
-> [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS) list. It starts hourly
+> **Personal fork.** This fork adds safety guards to the application code on top of
+> upstream, see [Fork changes](#fork-changes). The job runs from GitHub Actions:
+> it builds the project and rewrites NextDNS rules from the
+> [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS) list. It runs hourly
 > and immediately after the probe on the PC changes the addresses
 > (`repository_dispatch`). Credentials live in repository Secrets and are never stored in code.
 
-🌐 Languages: [󠁧󠁢󠁥󠁮󠁧󠁿**English**](README.md) | [**Русский**](README.ru.md)
+🌐 Languages: [󠁧󠁢󠁥󠁮󠁧󠁿 **English**](README.md) | [**Русский**](README.ru.md)
 
 [![Last Build](../../actions/workflows/github_action.yml/badge.svg?branch=main)](../../actions/workflows/github_action.yml)<br>
 
 # DNS Block&Redirect Configurer
 
-**Allows to set Redirect and Block rules to your Cloudflare and NextDNS accounts.**
+**Configure Redirect and Block rules for Cloudflare and NextDNS accounts.**
 
 **Ready-to-run via GitHub Actions.** [Video guide](https://www.youtube.com/watch?v=vbAXM_xAL5I)
 
@@ -298,3 +298,7 @@ On top of upstream this fork:
   the probe on the PC changed `health.txt` in the GeoHideDNS fork.
 - **Queues instead of cancelling.** Two runs touching the same profile are serialized,
   so a run is never cut in the middle between deleting and creating rewrites.
+- **Preserves `www.` when it points to a different IP than apex.** The parser no longer
+  strips `www.` from override lists. If `www.example.com` and `example.com` resolve to
+  different IPs (e.g. `www.last.fm` on MAIN, `last.fm` on ALT), both rewrites are kept.
+  Otherwise Firefox coalesces HTTP/2 connections and the site returns 403.
