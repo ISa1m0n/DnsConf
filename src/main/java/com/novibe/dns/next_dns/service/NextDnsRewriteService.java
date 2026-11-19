@@ -30,15 +30,17 @@ public class NextDnsRewriteService {
         // что у X, лишний: его и так закрывает X. Но если адреса различаются (разнос
         // www и apex, как у last.fm и deezer), www надо оставить отдельной записью:
         // иначе www уедет на адрес apex, Firefox склеит соединения и сайт ответит 403.
-        Map<String, String> bareIps = new HashMap<>();
-        overrides.forEach(route -> bareIps.putIfAbsent(removeWWW(route.website()), route.ip()));
+        Map<String, String> apexIps = new HashMap<>();
+        overrides.stream()
+                .filter(route -> route.website().equals(removeWWW(route.website())))
+                .forEach(route -> apexIps.putIfAbsent(route.website(), route.ip()));
 
         Map<String, CreateRewriteDto> rewriteDtos = new HashMap<>();
         for (BypassRoute route : overrides) {
             String domain = route.website();
-            String bare = removeWWW(domain);
-            boolean coveredByBareName = !domain.equals(bare) && route.ip().equals(bareIps.get(bare));
-            String name = coveredByBareName ? bare : domain;
+            String apex = removeWWW(domain);
+            boolean coveredByApex = !domain.equals(apex) && route.ip().equals(apexIps.get(apex));
+            String name = coveredByApex ? apex : domain;
             rewriteDtos.putIfAbsent(name, new CreateRewriteDto(name, route.ip()));
         }
         return rewriteDtos;

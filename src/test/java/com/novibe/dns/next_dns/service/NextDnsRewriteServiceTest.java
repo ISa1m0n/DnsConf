@@ -44,6 +44,15 @@ class NextDnsRewriteServiceTest {
         assertEquals(Set.of("claude.ai"), rewrites.keySet());
     }
 
+    @Test
+    void keepsWwwWhenApexIsNotListed() {
+        Map<String, CreateRewriteDto> rewrites = service.buildNewRewrites(List.of(
+                route("1.2.3.4", "www.example.com")));
+
+        assertEquals(Set.of("www.example.com"), rewrites.keySet());
+        assertEquals("1.2.3.4", rewrites.get("www.example.com").content());
+    }
+
     private BypassRoute route(String ip, String website) {
         return new BypassRoute(ip, website);
     }
