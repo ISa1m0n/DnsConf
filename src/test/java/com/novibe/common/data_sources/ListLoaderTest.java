@@ -59,6 +59,19 @@ class ListLoaderTest {
     }
 
     @Test
+    void keepsWwwPrefixInOverrideLists() throws IOException, InterruptedException {
+        String body = """
+                1.2.3.4 www.last.fm
+                5.6.7.8 last.fm
+                """;
+        doReturn(response(200, body, HOSTS_URL)).when(httpClient).send(any(), any());
+
+        List<BypassRoute> routes = loader.fetchWebsites(List.of(HOSTS_URL));
+
+        assertEquals(List.of("www.last.fm", "last.fm"), routes.stream().map(BypassRoute::website).toList());
+    }
+
+    @Test
     void retriesWhenSourceIsTemporarilyUnavailable() throws IOException, InterruptedException {
         withoutRetryDelay();
         doReturn(response(429, "too many requests", HOSTS_URL),

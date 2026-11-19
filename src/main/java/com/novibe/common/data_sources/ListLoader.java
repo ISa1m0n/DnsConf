@@ -31,6 +31,14 @@ public abstract class ListLoader<T> extends HttpRequestSender {
 
     protected abstract Predicate<HostsLine> filterRelatedLines();
 
+    /**
+     * Блок-листам www не нужен, спискам подмены адресов он иногда нужен: www может
+     * указывать на другой сервер, чем apex.
+     */
+    protected boolean stripWwwPrefix() {
+        return true;
+    }
+
     @Override
     protected String requestUrl(String path) {
         return path;
@@ -74,7 +82,7 @@ public abstract class ListLoader<T> extends HttpRequestSender {
                     .filter(line -> !line.isBlank())
                     .filter(line -> !DataParser.isComment(line))
                     .map(String::toLowerCase)
-                    .map(DataParser::parseHostsLine)
+                    .map(line -> DataParser.parseHostsLine(line, stripWwwPrefix()))
                     .filter(Objects::nonNull)
                     .filter(filterRelatedLines())
                     .distinct()

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.novibe.common.config.EnvironmentVariables.ALLOW_SHRINK;
+import static com.novibe.common.util.DataParser.removeWWW;
 import static java.util.Objects.nonNull;
 
 @Service
@@ -25,8 +26,21 @@ public class NextDnsRewriteService {
     private final ExcludeRedirectCheckService excludeRedirectCheckService;
 
     public Map<String, CreateRewriteDto> buildNewRewrites(List<BypassRoute> overrides) {
+        // Rewrite в NextDNS действует и на поддомены, поэтому www.X при том же адресе,
+        // что у X, лишний: его и так закрывает X. Но если адреса различаются (разнос
+        // www и apex, как у last.fm и deezer), www надо оставить отдельной записью:
+        // иначе www уедет на адрес apex, Firefox склеит соединения и сайт ответит 403.
+        Map<String, String> bareIps = new HashMap<>();
+        overrides.forEach(route -> bareIps.putIfAbsent(removeWWW(route.website()), route.ip()));
+
         Map<String, CreateRewriteDto> rewriteDtos = new HashMap<>();
-        overrides.forEach(route -> rewriteDtos.putIfAbsent(route.website(), new CreateRewriteDto(route.website(), route.ip())));
+        for (BypassRoute route : overrides) {
+            String domain = route.website();
+            String bare = removeWWW(domain);
+            boolean coveredByBareName = !domain.equals(bare) && route.ip().equals(bareIps.get(bare));
+            String name = coveredByBareName ? bare : domain;
+            rewriteDtos.putIfAbsent(name, new CreateRewriteDto(name, route.ip()));
+        }
         return rewriteDtos;
     }
 

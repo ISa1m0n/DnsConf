@@ -21,6 +21,11 @@ public class HostsOverrideListsLoader extends ListLoader<BypassRoute> {
     }
 
     @Override
+    protected boolean stripWwwPrefix() {
+        return false;
+    }
+
+    @Override
     protected BypassRoute toObject(HostsLine line) {
         return new BypassRoute(line.ip(), line.domain());
     }

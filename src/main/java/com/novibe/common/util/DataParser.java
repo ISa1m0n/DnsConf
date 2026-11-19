@@ -24,6 +24,16 @@ public class DataParser {
     }
 
     public static @Nullable HostsLine parseHostsLine(String line) {
+        return parseHostsLine(line, true);
+    }
+
+    /**
+     * @param stripWww срезать префикс www. В блок-листах это безопасно (домен
+     *                 блокируется вместе с поддоменами), а в списках подмены адресов
+     *                 www иногда указывает на другой сервер, чем apex, и тогда терять
+     *                 его нельзя.
+     */
+    public static @Nullable HostsLine parseHostsLine(String line, boolean stripWww) {
         String sanitizedLine = stripInlineComment(line);
         if (sanitizedLine.isBlank()) {
             return null;
@@ -31,10 +41,10 @@ public class DataParser {
         String[] columns = WHITESPACE.split(sanitizedLine, 3);
         if (columns.length == 1) {
             String value = columns[0];
-            return isValidIP(value) ? HostsLine.ipOnly(value) : HostsLine.domainOnly(removeWWW(value));
+            return isValidIP(value) ? HostsLine.ipOnly(value) : HostsLine.domainOnly(stripWww ? removeWWW(value) : value);
         } else if (columns.length == 2) {
             String ip = columns[0];
-            String domain = removeWWW(columns[1]);
+            String domain = stripWww ? removeWWW(columns[1]) : columns[1];
             if (isValidIP(ip)) {
                 return new HostsLine(ip, domain);
             }
