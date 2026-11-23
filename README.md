@@ -1,10 +1,16 @@
 > [!NOTE]
-> **Personal fork.** This fork adds safety guards to the application code on top of
-> upstream, see [Fork changes](#fork-changes). The job runs from GitHub Actions:
-> it builds the project and rewrites NextDNS rules from the
-> [GeoHideDNS → hosts-ai](https://github.com/ISa1m0n/GeoHideDNS) list. It runs hourly
-> and immediately after the probe on the PC changes the addresses
-> (`repository_dispatch`). Credentials live in repository Secrets and are never stored in code.
+> **Personal fork.** On top of upstream it adds safety guards (see [Fork changes](#fork-changes))
+> and is wired to one specific setup:
+>
+> - `REDIRECT` points to the raw `hosts-ai.txt` from
+>   [GeoHideDNS](https://github.com/ISa1m0n/GeoHideDNS), `BLOCK` - to an ad list
+>   (`hagezi-multi-normal`);
+> - the job runs hourly and right after the probe on the PC commits new addresses
+>   (`repository_dispatch: geohide-updated`);
+> - `CLIENT_ID` and `AUTH_SECRET` live in repository Secrets, never in code.
+>
+> Full chain: probe on the PC -> `health.txt` -> GitHub Actions build -> `hosts-ai.txt`
+> -> this job -> rewrites in NextDNS.
 
 🌐 Languages: [󠁧󠁢󠁥󠁮󠁧󠁿 **English**](README.md) | [**Русский**](README.ru.md)
 
@@ -307,3 +313,16 @@ On top of upstream this fork:
   apex rewrite already covers subdomains. The old record with another address is deleted,
   otherwise the domain keeps answering with a dead IP while the apex is already fixed.
   That is what happened to `www.last.fm` on 23.11.2026.
+- **Tests on every push to `main`.** `tests.yml` runs on pull requests and on pushes,
+  so a Java change cannot slip in unchecked.
+
+### How to check that it works
+
+1. **Actions.** Open the **DNS Block&Redirect Configurer cron task** workflow and confirm
+   the last run is green. The log goes `Fetching existing rewrites`, `Removing N ...`,
+   `Saving N new rewrites`.
+2. **DNS on the PC.** `nslookup chatgpt.com` returns the address from `health.txt`,
+   `nslookup gemini.google.com` returns `GEMINI`.
+3. **One domain is broken while the rest work.** Check the NextDNS profile for a separate
+   `www.` or subdomain record with another address: it overrides the apex, and the next
+   run removes it.
