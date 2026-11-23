@@ -302,3 +302,8 @@ On top of upstream this fork:
   strips `www.` from override lists. If `www.example.com` and `example.com` resolve to
   different IPs (e.g. `www.last.fm` on MAIN, `last.fm` on ALT), both rewrites are kept.
   Otherwise Firefox coalesces HTTP/2 connections and the site returns 403.
+- **Drops a leftover `www.` rewrite when the apex covers it.** If `www.example.com`
+  resolves to the same IP as `example.com`, a separate `www.` rewrite is pointless: the
+  apex rewrite already covers subdomains. The old record with another address is deleted,
+  otherwise the domain keeps answering with a dead IP while the apex is already fixed.
+  That is what happened to `www.last.fm` on 23.11.2026.

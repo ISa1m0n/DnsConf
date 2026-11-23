@@ -23,3 +23,9 @@ jobs:
 
       - name: Run tests
         run: mvn -B test
+        env:
+          # EnvironmentVariables требует эти переменные на загрузке класса,
+          # даже если конкретный тест их не использует.
+          DNS: nextdns
+          CLIENT_ID: test
+          AUTH_SECRET: test

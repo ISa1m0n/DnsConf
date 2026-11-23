@@ -60,6 +60,11 @@ public class NextDnsRewriteService {
 
         List<String> outdatedIds = new ArrayList<>();
         List<String> ignoredIds = new ArrayList<>();
+        List<String> collapsedIds = new ArrayList<>();
+
+        // Снимок нужного набора: в цикле из newRewriteRequests удаляются уже совпавшие
+        // записи, а сверяться надо с исходным списком.
+        Map<String, CreateRewriteDto> desired = Map.copyOf(newRewriteRequests);
 
         for (RewriteDto existingRewrite : existingRewrites) {
             String domain = existingRewrite.name();
@@ -69,11 +74,18 @@ public class NextDnsRewriteService {
                 newRewriteRequests.remove(domain);
                 continue;
             }
-            CreateRewriteDto request = newRewriteRequests.get(domain);
-            if (nonNull(request) && !request.content().equals(oldIp)) {
-                outdatedIds.add(existingRewrite.id());
-            } else {
-                newRewriteRequests.remove(domain);
+            CreateRewriteDto request = desired.get(domain);
+            if (nonNull(request)) {
+                if (!request.content().equals(oldIp)) {
+                    outdatedIds.add(existingRewrite.id());
+                } else {
+                    newRewriteRequests.remove(domain);
+                }
+            } else if (!domain.equals(removeWWW(domain)) && desired.containsKey(removeWWW(domain))) {
+                // www.X схлопнулся в apex X: rewrite и так действует на поддомены, а старая
+                // отдельная запись с другим IP остаётся и мешает. Так 23.11.2026 www.last.fm
+                // держал мёртвый адрес и сайт не открывался, хотя apex уже был живой.
+                collapsedIds.add(existingRewrite.id());
             }
         }
         newRewriteRequests.keySet().removeIf(excludeRedirectCheckService::shouldExclude);
@@ -85,6 +97,10 @@ public class NextDnsRewriteService {
         if (!ignoredIds.isEmpty()) {
             Log.io("Removing %s excluded rewrites from NextDNS".formatted(ignoredIds.size()));
             nextDnsRewriteClient.deleteRewritesByIds(ignoredIds);
+        }
+        if (!collapsedIds.isEmpty()) {
+            Log.io("Removing %s rewrites already covered by their apex domain".formatted(collapsedIds.size()));
+            nextDnsRewriteClient.deleteRewritesByIds(collapsedIds);
         }
         return List.copyOf(newRewriteRequests.values());
     }
