@@ -3,6 +3,7 @@ package com.novibe.common.config;
 import com.novibe.common.exception.UserInputException;
 
 import static java.util.Objects.isNull;
+import static java.util.Optional.ofNullable;
 
 public class EnvironmentVariables {
 
@@ -19,6 +20,10 @@ public class EnvironmentVariables {
     public static final String EXCLUDE_REDIRECT = System.getenv("EXCLUDE_REDIRECT");
 
     public static final String DONOR_DNS = System.getenv("DONOR_DNS");
+
+    public static final boolean COMPRESS = ofNullable(System.getenv("COMPRESS"))
+            .map(Boolean::parseBoolean)
+            .orElse(false);
 
     // Форк: страховки от случайного стирания профиля. По умолчанию выключены,
     // поведение апстрима сохраняется, если выставить их в 1.

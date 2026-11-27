@@ -1,7 +1,9 @@
 package com.novibe.dns.next_dns.service;
 
 import com.novibe.common.base_structures.BypassRoute;
+import com.novibe.common.config.EnvironmentVariables;
 import com.novibe.common.service.ExcludeRedirectCheckService;
+import com.novibe.common.util.HostsCompressor;
 import com.novibe.common.util.Log;
 import com.novibe.dns.next_dns.http.NextDnsRewriteClient;
 import com.novibe.dns.next_dns.http.dto.request.CreateRewriteDto;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.novibe.common.config.EnvironmentVariables.ALLOW_SHRINK;
 import static com.novibe.common.util.DataParser.removeWWW;
@@ -48,6 +51,13 @@ public class NextDnsRewriteService {
 
     public List<CreateRewriteDto> cleanupOutdatedAndExcluded(Map<String, CreateRewriteDto> newRewriteRequests) {
         List<RewriteDto> existingRewrites = getExistingRewrites();
+
+        if (isRequiresCompression(existingRewrites)) {
+            Log.common("Compression enabled, but existing rewrites are not compressed yet.");
+            Log.io("Removing %s existing rewrites to apply compression".formatted(existingRewrites.size()));
+            nextDnsRewriteClient.deleteRewritesByIds(existingRewrites.stream().map(RewriteDto::id).toList());
+            existingRewrites = List.of();
+        }
 
         // Форк: если новый список внезапно стал вдвое короче, это почти всегда битый
         // или недокачанный hosts, а не осознанное сокращение. Профиль не трогаем.
@@ -121,6 +131,19 @@ public class NextDnsRewriteService {
         List<String> ids = list.stream().map(RewriteDto::id).toList();
         Log.io("Removing rewrites from NextDNS");
         nextDnsRewriteClient.deleteRewritesByIds(ids);
+    }
+
+    public boolean isRequiresCompression(List<RewriteDto> existingRewrites) {
+        if (EnvironmentVariables.COMPRESS) {
+
+            ArrayList<BypassRoute> routes = existingRewrites.stream()
+                    .map(rewriteDto -> new BypassRoute(rewriteDto.content(), rewriteDto.name()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+            HostsCompressor.compress(routes);
+
+            return existingRewrites.size() != routes.size();
+        }
+        return false;
     }
 
 }

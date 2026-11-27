@@ -1,9 +1,10 @@
 package com.novibe.common.util;
 
 import com.novibe.common.base_structures.HostsLine;
-import org.jspecify.annotations.Nullable;
 
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -23,7 +24,7 @@ public class DataParser {
         return line.startsWith("#");
     }
 
-    public static @Nullable HostsLine parseHostsLine(String line) {
+    public static List<HostsLine> parseHostsLine(String line) {
         return parseHostsLine(line, true);
     }
 
@@ -33,24 +34,23 @@ public class DataParser {
      *                 www иногда указывает на другой сервер, чем apex, и тогда терять
      *                 его нельзя.
      */
-    public static @Nullable HostsLine parseHostsLine(String line, boolean stripWww) {
+    public static List<HostsLine> parseHostsLine(String line, boolean stripWww) {
         String sanitizedLine = stripInlineComment(line);
         if (sanitizedLine.isBlank()) {
-            return null;
+            return List.of();
         }
-        String[] columns = WHITESPACE.split(sanitizedLine, 3);
+        String[] columns = WHITESPACE.split(sanitizedLine);
         if (columns.length == 1) {
             String value = columns[0];
-            return isValidIP(value) ? HostsLine.ipOnly(value) : HostsLine.domainOnly(stripWww ? removeWWW(value) : value);
-        } else if (columns.length == 2) {
+            return List.of(isValidIP(value) ? HostsLine.ipOnly(value) : HostsLine.domainOnly(stripWww ? removeWWW(value) : value));
+        } else if (isValidIP(columns[0])) {
             String ip = columns[0];
-            String domain = stripWww ? removeWWW(columns[1]) : columns[1];
-            if (isValidIP(ip)) {
-                return new HostsLine(ip, domain);
-            }
+            return Arrays.stream(columns, 1, columns.length)
+                    .map(domain -> new HostsLine(ip, stripWww ? removeWWW(domain) : domain))
+                    .toList();
         }
         Log.fail("Failed to parse hosts line: " + line);
-        return null;
+        return List.of();
     }
 
     public static Stream<String> splitByEol(String data) {
