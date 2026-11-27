@@ -297,6 +297,12 @@ Previously generated data is removed **ONLY** when both `BLOCK` and `REDIRECT` s
   `.github/workflows/github_action.yml`
 + You can run the action manually via `Run workflow` button: switch to _Actions_ tab and choose workflow named **DNS
   Block&Redirect Configurer cron task**
++ **The fork pulls upstream by itself.** `sync-upstream.yml` merges `noVibe/DnsConf` into
+  `main` once a day, but only when the merge is clean: a conflict leaves `main` untouched and
+  opens an issue. After the merge it checks the fork's markers, runs the tests, and only then
+  pushes. The **Sync fork** button is no longer needed. Pushing requires
+  _Settings_ => _Actions_ => _General_ => _Workflow permissions_ set to
+  **Read and write permissions**.
 
 ---
 

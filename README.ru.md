@@ -345,6 +345,12 @@ https://www.youtube.com/watch?v=vbAXM_xAL5I
   Чтобы изменить время, отредактируйте cron в `.github/workflows/github_action.yml`
 + **Action** можно запустить вручную через кнопку **Run workflow**:  
   вкладка _Actions_ → workflow **DNS Block&Redirect Configurer cron task**
++ **Форк сам подтягивает апстрим.** `sync-upstream.yml` раз в сутки сливает
+  `noVibe/DnsConf` в `main`, но только при чистом мердже: при конфликте `main` не меняется
+  и открывается issue. После слияния проверяются маркеры правок форка, гоняются тесты,
+  и только потом пуш. Кнопка **Sync fork** больше не нужна. Для пуша нужно, чтобы
+  в _Settings_ → _Actions_ → _General_ → _Workflow permissions_ стояло
+  **Read and write permissions**.
 
 ---
 
