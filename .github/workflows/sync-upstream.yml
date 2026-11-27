@@ -1,0 +1,131 @@
+name: Sync upstream
+
+# Автоматическая синхронизация форка с noVibe/DnsConf.
+#
+# Правила, чтобы синхронизация не сломала схему:
+#   1. Слияние идёт только вперёд и только при чистом мердже. При конфликте
+#      ветка main не меняется вообще, открывается issue.
+#   2. После слияния проверяются маркеры правок форка. Если апстрим переписал
+#      файл и наши правки пропали, слияние отменяется.
+#   3. Затем гоняются тесты. Пушим только если они зелёные.
+#
+# Права: Settings - Actions - General - Workflow permissions должно стоять
+# "Read and write permissions", иначе push не пройдёт.
+
+on:
+  schedule:
+    - cron: '17 4 * * *' # раз в сутки, не в минуту ежечасного крона DNS
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DNS: ${{ vars.DNS }}
+      BLOCK: ${{ vars.BLOCK }}
+      REDIRECT: ${{ vars.REDIRECT }}
+      EXCLUDE_REDIRECT: ${{ vars.EXCLUDE_REDIRECT }}
+      DONOR_DNS: ${{ vars.DONOR_DNS }}
+      COMPRESS: ${{ vars.COMPRESS }}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/noVibe/DnsConf.git
+          git fetch --no-tags upstream main
+
+      - name: Merge upstream
+        id: merge
+        run: |
+          behind=$(git rev-list --count HEAD..upstream/main)
+          echo "Отставание от апстрима: $behind коммитов"
+          if [ "$behind" -eq 0 ]; then
+            echo "state=uptodate" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git -c user.name="SaIm0n" \
+                 -c user.email="85701153+ISa1m0n@users.noreply.github.com" \
+                 merge --no-ff --no-edit upstream/main; then
+            echo "state=merged" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort || true
+            echo "state=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Keep fork rules
+        if: steps.merge.outputs.state == 'merged'
+        run: |
+          set -eu
+          check() {
+            grep -q "$2" "$1" || { echo "::error::Правка форка пропала: $1 больше не содержит $2"; exit 1; }
+          }
+          check src/main/java/com/novibe/common/data_sources/ListLoader.java stripWwwPrefix
+          check src/main/java/com/novibe/common/util/DataParser.java stripWww
+          check src/main/java/com/novibe/common/config/EnvironmentVariables.java ALLOW_SHRINK
+          check src/main/java/com/novibe/common/config/EnvironmentVariables.java WIPE
+          check src/main/java/com/novibe/dns/next_dns/NextDnsTaskRunner.java WIPE
+          check .github/workflows/github_action.yml geohide-updated
+          check .github/workflows/github_action.yml cancel-in-progress
+          echo "Правки форка на месте"
+
+      - name: Set up JDK 26
+        if: steps.merge.outputs.state == 'merged'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '26'
+          cache: maven
+
+      - name: Run tests
+        if: steps.merge.outputs.state == 'merged'
+        run: mvn -B test
+
+      - name: Push
+        if: steps.merge.outputs.state == 'merged'
+        run: git push origin HEAD:main
+
+      - name: Report conflict
+        if: steps.merge.outputs.state == 'conflict'
+        run: |
+          body=$(cat <<'TEXT'
+          Автоматическое слияние с апстримом упёрлось в конфликт. Ветка main не изменена.
+
+          Разобрать вручную:
+
+               cd D:\OpenCode\DnsConf
+               git fetch https://github.com/noVibe/DnsConf.git main:up
+               git merge up
+
+          Разрешить конфликты, затем:
+
+               git add -A && git commit
+               mvn -B test
+               git push origin main
+
+          После пуша рабочее дерево снова совпадёт с GitHub, следующий запуск пройдёт сам.
+          TEXT
+          )
+          existing=$(gh issue list --state open --json number,title \
+            --jq '.[] | select(.title=="sync: конфликт с апстримом") | .number')
+          if [ -z "$existing" ]; then
+            gh issue create --title "sync: конфликт с апстримом" --body "$body"
+          fi
+          exit 1

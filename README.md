@@ -351,6 +351,11 @@ On top of upstream this fork:
   and apex point to different servers.
 - **Tests on every push to `main`.** `tests.yml` runs on pull requests and on pushes,
   so a Java change cannot slip in unchecked.
+- **Automatic upstream sync.** `sync-upstream.yml` merges `noVibe/DnsConf` into `main`
+  once a day, but only when the merge is clean. It then checks the fork's markers (the
+  split `www` handling, `WIPE`, `ALLOW_SHRINK`, the `geohide-updated` dispatch, queue
+  instead of cancel), runs the tests, and only then pushes. A conflict leaves `main`
+  untouched and opens an issue. The Sync fork button is no longer needed.
 
 ### How to check that it works
 
