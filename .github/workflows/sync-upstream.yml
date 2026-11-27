@@ -110,7 +110,7 @@ jobs:
 
           Разобрать вручную:
 
-               cd D:\OpenCode\DnsConf
+               cd D:\OpenCode\nextdns-sync
                git fetch https://github.com/noVibe/DnsConf.git main:up
                git merge up
 

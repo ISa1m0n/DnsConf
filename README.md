@@ -1,9 +1,9 @@
 > [!NOTE]
-> **Personal fork.** On top of upstream it adds safety guards (see [Fork changes](#fork-changes))
+> **`nextdns-sync`** - personal fork of [DnsConf](https://github.com/noVibe/DnsConf). On top of upstream it adds safety guards (see [Fork changes](#fork-changes))
 > and is wired to one specific setup:
 >
 > - `REDIRECT` points to the raw `hosts-ai.txt` from
->   [GeoHideDNS](https://github.com/ISa1m0n/GeoHideDNS), `BLOCK` - to an ad list
+>   [ai-hosts](https://github.com/ISa1m0n/ai-hosts), `BLOCK` - to an ad list
 >   (`hagezi-multi-normal`);
 > - the job runs hourly and right after the probe on the PC commits new addresses
 >   (`repository_dispatch: geohide-updated`);
@@ -292,7 +292,7 @@ Previously generated data is removed **ONLY** when both `BLOCK` and `REDIRECT` s
 5) Provide `DNS`,`REDIRECT`, `BLOCK` and `EXCLUDE_REDIRECT` to **Environment variables**. Optional `DONOR_DNS` and
    `COMPRESS` go there too
 
-+ The action is executed **hourly** as a fallback, and immediately when the GeoHideDNS fork
++ The action is executed **hourly** as a fallback, and immediately when the ai-hosts fork
   sends a `repository_dispatch` (`geohide-updated`). To set another time, change cron at
   `.github/workflows/github_action.yml`
 + You can run the action manually via `Run workflow` button: switch to _Actions_ tab and choose workflow named **DNS
@@ -338,7 +338,7 @@ On top of upstream this fork:
   almost always a truncated or broken hosts file. Set `ALLOW_SHRINK=1` to override.
 - **Runs hourly and on demand.** The cron is hourly as a fallback, and
   the `repository_dispatch` event `geohide-updated` starts the job right after
-  the probe on the PC changed `health.txt` in the GeoHideDNS fork.
+  the probe on the PC changed `health.txt` in the ai-hosts fork.
 - **Queues instead of cancelling.** Two runs touching the same profile are serialized,
   so a run is never cut in the middle between deleting and creating rewrites.
 - **Preserves `www.` when it points to a different IP than apex.** The parser no longer

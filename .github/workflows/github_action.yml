@@ -2,7 +2,7 @@ name: DNS Block&Redirect Configurer cron task
 
 on:
   schedule:
-    - cron: '0 * * * *' # каждый час: страховка, если repository_dispatch от GeoHideDNS не прошёл
+    - cron: '0 * * * *' # каждый час: страховка, если repository_dispatch от ai-hosts не прошёл
   repository_dispatch:
     types: [geohide-updated] # мгновенный запуск после того, как проверка с ПК сменила адреса
   workflow_dispatch:

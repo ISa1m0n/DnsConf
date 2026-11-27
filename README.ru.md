@@ -1,10 +1,10 @@
 > [!NOTE]
-> **Персональный форк.** В код приложения добавлены защитные меры поверх апстрима,
+> **`nextdns-sync`** - персональный форк [DnsConf](https://github.com/noVibe/DnsConf). В код приложения добавлены защитные меры поверх апстрима,
 > см. [Что изменено в форке](#что-изменено-в-форке). Форк подключён к одной конкретной
 > схеме:
 >
 > - `REDIRECT` указывает на raw `hosts-ai.txt` из
->   [GeoHideDNS](https://github.com/ISa1m0n/GeoHideDNS), `BLOCK` - на список рекламы
+>   [ai-hosts](https://github.com/ISa1m0n/ai-hosts), `BLOCK` - на список рекламы
 >   (`hagezi-multi-normal`);
 > - задача идёт каждый час и сразу после того, как проверка с ПК закоммитила новые
 >   адреса (`repository_dispatch: geohide-updated`);
@@ -341,7 +341,7 @@ https://www.youtube.com/watch?v=vbAXM_xAL5I
    опциональные `DONOR_DNS` и `COMPRESS`
 
 + **Action** запускается **раз в час** как страховка и сразу по `repository_dispatch`
-  (`geohide-updated`) от форка GeoHideDNS.  
+  (`geohide-updated`) от форка ai-hosts.  
   Чтобы изменить время, отредактируйте cron в `.github/workflows/github_action.yml`
 + **Action** можно запустить вручную через кнопку **Run workflow**:  
   вкладка _Actions_ → workflow **DNS Block&Redirect Configurer cron task**
@@ -388,7 +388,7 @@ workflow**.<br>
   это обрезанный или битый hosts. Обойти можно переменной `ALLOW_SHRINK=1`.
 - **Запуск каждый час и по требованию.** Крон раз в час как страховка, плюс
   событие `repository_dispatch` с типом `geohide-updated` запускает задачу сразу после
-  того, как проверка с ПК поменяла `health.txt` в форке GeoHideDNS.
+  того, как проверка с ПК поменяла `health.txt` в форке ai-hosts.
 - **Очередь вместо отмены.** Два прогона по одному профилю идут по очереди, так что
   запуск не обрывается на середине между удалением и созданием rewrites.
 - **Сохраняет `www.`, если он указывает на другой IP, чем apex.** Парсер больше не
